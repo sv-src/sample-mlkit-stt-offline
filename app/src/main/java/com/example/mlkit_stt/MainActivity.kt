@@ -419,7 +419,7 @@ fun SpeechEchoScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Speech Echo",
+            text = "MLKIT STT",
             style = MaterialTheme.typography.headlineMedium
         )
 
