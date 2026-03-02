@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
     private var micEnabled by mutableStateOf(false)
     private var isDownloading by mutableStateOf(false)
     private var selectedLocale by mutableStateOf(Locale.forLanguageTag("en-US"))
+    private var sttDurationMs by mutableStateOf(0L)  // 0 = not yet measured
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -111,6 +112,7 @@ class MainActivity : ComponentActivity() {
                         micEnabled = micEnabled,
                         isDownloading = isDownloading,
                         selectedLocale = selectedLocale,
+                        sttDurationMs = sttDurationMs,
                         onLanguageChange = { switchLanguage(it) },
                         onMicClick = { if (isListening) stopListening() else startListening() }
                     )
@@ -298,6 +300,7 @@ class MainActivity : ComponentActivity() {
         recognitionJob?.cancel()
         isListening = true
         recognizedText = ""
+        sttDurationMs = 0L
         status = "Listening…"
 
         listenStartMs = System.currentTimeMillis()
@@ -315,7 +318,7 @@ class MainActivity : ComponentActivity() {
                             recognizedText = text
                             isListening = false
                             sttDoneMs = System.currentTimeMillis()
-                            val sttDurationMs = sttDoneMs - listenStartMs
+                            sttDurationMs = sttDoneMs - listenStartMs
                             Log.i(TAG, "STT duration (mic open → text ready): ${sttDurationMs}ms")
                             activeRecognizer?.stopRecognition()
                             speakBack(text)
@@ -400,6 +403,7 @@ fun SpeechEchoScreen(
     micEnabled: Boolean,
     isDownloading: Boolean,
     selectedLocale: Locale,
+    sttDurationMs: Long,
     onLanguageChange: (Locale) -> Unit,
     onMicClick: () -> Unit
 ) {
@@ -485,8 +489,21 @@ fun SpeechEchoScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = 4.dp)
         )
+
+        // STT timing — shown after a recognition completes
+        if (sttDurationMs > 0L && !isListening) {
+            Text(
+                text = "STT took ${sttDurationMs} ms",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 20.dp)
+            )
+        } else {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
 
         // Mic FAB — turns red with Stop icon while listening
         FloatingActionButton(
